@@ -1,7 +1,8 @@
-// quiz_app.js
+// quiz_app.js (修正案)
 import { allQuizData } from './data/quiz_data_loader.js';
 
 // --- DOM要素の取得 ---
+// (省略...前回と同じ)
 const selectionArea = document.getElementById('selection-area');
 const yearButtonsContainer = document.getElementById('year-buttons-container');
 const categoryButtonsContainer = document.getElementById('category-buttons-container');
@@ -25,7 +26,7 @@ const navigationArea = document.getElementById('navigation-area');
 const questionDetailsWrapper = document.getElementById('question-details-wrapper');
 const timerBarContainer = document.querySelector('.timer-bar-container');
 const timerBar = document.getElementById('timer-bar');
-const pauseResumeButton = document.getElementById('pause-resume-button'); // ▼追加: 一時停止ボタン
+const pauseResumeButton = document.getElementById('pause-resume-button');
 
 const resultsArea = document.getElementById('results-area');
 const finalScoreTextElement = document.getElementById('final-score-text');
@@ -59,7 +60,6 @@ const favoritesList = document.getElementById('favorites-list');
 const clearFavoritesButton = document.getElementById('clear-favorites-button');
 const closeFavoritesModalButton = document.getElementById('close-favorites-modal-button');
 
-
 // --- localStorage キー ---
 const QUIZ_PROGRESS_KEY = 'quizAppProgress';
 const SCORE_HISTORY_KEY = 'quizAppScoreHistory';
@@ -69,10 +69,11 @@ const FAVORITES_KEY = 'quizAppFavorites';
 let autoAdvanceTimer = null;
 let autoAdvanceInterval = null;
 const AUTO_ADVANCE_DELAY = 15000;
-let isAutoAdvancePaused = false; // ▼追加: 一時停止状態フラグ
-let remainingAutoAdvanceTime = 0; // ▼追加: 残り時間保存用
+let isAutoAdvancePaused = false;
+let remainingAutoAdvanceTime = 0;
 
 // --- テーマ関連 ---
+// (省略...前回と同じ)
 let currentTheme = localStorage.getItem('theme') || 'light';
 const sunIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>`;
 const moonIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>`;
@@ -80,7 +81,9 @@ function applyTheme(theme) { if (theme === 'dark') { document.documentElement.cl
 function toggleTheme() { const newTheme = currentTheme === 'light' ? 'dark' : 'light'; applyTheme(newTheme); }
 function initializeTheme() { const savedTheme = localStorage.getItem('theme'); const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches; if (savedTheme) { applyTheme(savedTheme); } else if (prefersDark) { applyTheme('dark'); } else { applyTheme('light'); } }
 
+
 // --- 効果音関連 ---
+// (省略...前回と同じ)
 let isMuted = false;
 let synth, correctSound, incorrectSound, scoreSoundGood, scoreSoundOkay, scoreSoundBad;
 const speakerOnIcon = `<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M16.143 3.107a1.002 1.002 0 00-1.086.143L9.63 8H5a1 1 0 00-1 1v6a1 1 0 001 1h4.63l5.427 4.75a1.002 1.002 0 001.086.143 1 1 0 00.557-.92V4.027a1 1 0 00-.557-.92zM18 8.465a1 1 0 00-1.414.035 4.502 4.502 0 000 7.002A1 1 0 1018 16.537a6.503 6.503 0 000-10.107 1 1 0 00-.001-1.001L18 8.465z"></path><path d="M19.071 4.929a1 1 0 10-1.414 1.414 8.503 8.503 0 010 11.314 1 1 0 101.414 1.414 10.504 10.504 0 000-14.142z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>`;
@@ -90,7 +93,9 @@ function setupSynths() { if (!synth) { synth = new Tone.Synth({ oscillator: { ty
 function toggleMute() { isMuted = !isMuted; updateMuteButtonIcon(); localStorage.setItem('quizMuted', isMuted.toString()); }
 function updateMuteButtonIcon() { if (muteButton) muteButton.innerHTML = isMuted ? speakerOffIcon : speakerOnIcon; }
 
+
 // --- お気に入り機能関連 ---
+// (省略...前回と同じ)
 let favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY)) || [];
 const starEmptyIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.82.61l-4.72-3.004a.563.563 0 00-.652 0l-4.72 3.004a.562.562 0 01-.82-.61l1.285-5.385a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>`;
 const starFilledIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354l-4.76 3.003c-.996.608-2.231-.289-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>`;
@@ -103,6 +108,7 @@ function clearFavorites() { if (confirm('すべてのお気に入りを解除し
 
 
 // --- クイズの状態管理 ---
+// (省略...前回と同じ)
 let currentQuestionIndex = 0;
 let score = 0;
 let currentQuizQuestions = [];
@@ -114,16 +120,20 @@ let currentSetCategory = null;
 let currentSetScore = 0;
 let currentSetAttempted = 0;
 
+
 // --- アニメーションヘルパー ---
+// (省略...前回と同じ)
 function switchView(hideElement, showElement) { if (hideElement) { hideElement.classList.remove('active'); hideElement.style.display = 'none'; } if (showElement) { showElement.style.display = 'block'; requestAnimationFrame(() => { showElement.classList.add('active'); }); } }
 
 // --- イベントリスナー ---
+// (省略...前回と同じ箇所は省略)
 if (startQuizButton) startQuizButton.addEventListener('click', () => { initializeAudio(); handleStartQuiz(false); });
 if (resumeQuizButton) resumeQuizButton.addEventListener('click', () => { initializeAudio(); handleStartQuiz(true); });
-if (nextQuestionButton) nextQuestionButton.addEventListener('click', () => { /* clearTimeout(autoAdvanceTimer); clearInterval(autoAdvanceInterval); */ resetAutoAdvanceState(); loadNextQuestion(); }); // resetAutoAdvanceState呼び出しに修正
-if (prevQuestionButton) prevQuestionButton.addEventListener('click', () => { /* clearTimeout(autoAdvanceTimer); clearInterval(autoAdvanceInterval); */ resetAutoAdvanceState(); loadPreviousQuestion(); }); // resetAutoAdvanceState呼び出しに修正
+// nextQuestionButton, prevQuestionButton は resetAutoAdvanceState() を呼ぶように修正
+if (nextQuestionButton) nextQuestionButton.addEventListener('click', () => { resetAutoAdvanceState(); loadNextQuestion(); });
+if (prevQuestionButton) prevQuestionButton.addEventListener('click', () => { resetAutoAdvanceState(); loadPreviousQuestion(); });
 if (restartQuizButton) restartQuizButton.addEventListener('click', handleRestartSameQuiz);
-if (homeButtonQuiz) homeButtonQuiz.addEventListener('click', () => { /* clearTimeout(autoAdvanceTimer); clearInterval(autoAdvanceInterval); */ goToHome(); }); // goToHome内でresetAutoAdvanceStateが呼ばれる
+if (homeButtonQuiz) homeButtonQuiz.addEventListener('click', () => { goToHome(); });
 if (homeButtonResults) homeButtonResults.addEventListener('click', goToHome);
 if (muteButton) muteButton.addEventListener('click', toggleMute);
 if (themeToggleButton) themeToggleButton.addEventListener('click', toggleTheme);
@@ -134,12 +144,14 @@ if (viewFavoritesButton) viewFavoritesButton.addEventListener('click', displayFa
 if (closeFavoritesModalButton) closeFavoritesModalButton.addEventListener('click', () => { if (favoritesModal) favoritesModal.classList.remove('active'); });
 if (clearFavoritesButton) clearFavoritesButton.addEventListener('click', clearFavorites);
 if (favoriteButton) favoriteButton.addEventListener('click', toggleFavorite);
-if (continueToNextSetButton) continueToNextSetButton.addEventListener('click', () => { resetAutoAdvanceState(); continueToNextSet(); }); // resetAutoAdvanceState呼び出しに修正
-if (interruptQuizButton) interruptQuizButton.addEventListener('click', () => { resetAutoAdvanceState(); interruptQuiz(); }); // resetAutoAdvanceState呼び出しに修正
-if (pauseResumeButton) pauseResumeButton.addEventListener('click', toggleAutoAdvancePause); // ▼追加
+// continueToNextSetButton, interruptQuizButton も resetAutoAdvanceState() を呼ぶように修正
+if (continueToNextSetButton) continueToNextSetButton.addEventListener('click', () => { resetAutoAdvanceState(); continueToNextSet(); });
+if (interruptQuizButton) interruptQuizButton.addEventListener('click', () => { resetAutoAdvanceState(); interruptQuiz(); });
+if (pauseResumeButton) pauseResumeButton.addEventListener('click', toggleAutoAdvancePause);
 
 
 // --- 保存・読み込み関連 ---
+// (省略...前回と同じ)
 function saveQuizProgress() { const progress = { selectedYear: selectedYearValue, selectedCategory: selectedCategoryValue, currentQuestionIndex: currentQuestionIndex, userAnswers: userAnswers, score: score, currentQuizQuestions: currentQuizQuestions, currentSetYear, currentSetCategory, currentSetScore, currentSetAttempted }; localStorage.setItem(QUIZ_PROGRESS_KEY, JSON.stringify(progress)); }
 function loadQuizProgress() { const savedProgress = localStorage.getItem(QUIZ_PROGRESS_KEY); if (savedProgress) { return JSON.parse(savedProgress); } return null; }
 function clearQuizProgress() { localStorage.removeItem(QUIZ_PROGRESS_KEY); if (resumeQuizButton) resumeQuizButton.style.display = 'none'; }
@@ -147,46 +159,50 @@ function saveScore(quizResult) { let history = JSON.parse(localStorage.getItem(S
 function displayScoreHistory() { if (!scoreHistoryTableBody || !scoreHistoryModal || !totalAttemptedStat || !totalCorrectStat || !averageAccuracyStat) { console.error("Score history DOM elements not found for displayScoreHistory."); return; } const history = JSON.parse(localStorage.getItem(SCORE_HISTORY_KEY)) || []; scoreHistoryTableBody.innerHTML = ''; let totalAttempted = 0; let totalCorrect = 0; if (history.length === 0) { const row = scoreHistoryTableBody.insertRow(); const cell = row.insertCell(); cell.colSpan = 5; cell.textContent = 'まだ成績がありません。'; cell.style.textAlign = 'center'; } else { history.forEach(result => { const row = scoreHistoryTableBody.insertRow(); row.insertCell().textContent = new Date(result.date).toLocaleString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}); row.insertCell().textContent = result.year === 'すべて' ? '全年度' : formatYearForDisplay(result.year); row.insertCell().textContent = result.category === 'すべて' ? '全分野' : result.category; row.insertCell().textContent = `${result.correctAnswers} / ${result.totalQuestions}`; row.insertCell().textContent = `${result.percentage.toFixed(1)}%`; totalAttempted += result.totalQuestions; totalCorrect += result.correctAnswers; }); } totalAttemptedStat.textContent = totalAttempted; totalCorrectStat.textContent = totalCorrect; averageAccuracyStat.textContent = totalAttempted > 0 ? ((totalCorrect / totalAttempted) * 100).toFixed(1) : '0.0'; scoreHistoryModal.classList.add('active'); }
 function clearScoreHistory() { if (confirm('本当にすべての成績履歴を消去しますか？この操作は元に戻せません。')) { localStorage.removeItem(SCORE_HISTORY_KEY); displayScoreHistory(); } }
 
+
 // --- 中間結果関連 ---
+// (省略...前回と同じ)
 function showInterimResults() { if (!interimResultsModal || !interimTitleText || !interimScoreText) return; interimTitleText.textContent = `${formatYearForDisplay(currentSetYear)} ${currentSetCategory}`; const percentage = currentSetAttempted > 0 ? (currentSetScore / currentSetAttempted) * 100 : 0; interimScoreText.textContent = `このセットのスコア: ${currentSetScore} / ${currentSetAttempted} (${percentage.toFixed(1)}%)`; interimResultsModal.classList.add('active'); }
 function continueToNextSet() { if (interimResultsModal) interimResultsModal.classList.remove('active'); currentSetScore = 0; currentSetAttempted = 0; loadQuestion(); }
 function interruptQuiz() { if (interimResultsModal) interimResultsModal.classList.remove('active'); saveQuizProgress(); goToHome(); }
 
-
-// ▼▼▼ 自動送り一時停止/再開関連の関数を追加 ▼▼▼
+// --- 自動送り一時停止/再開関連の関数 ---
 function toggleAutoAdvancePause() {
-    if (!userAnswers[currentQuestionIndex]) return; // 解答前は無効 (または、タイマーが作動していない場合)
+    if (!userAnswers[currentQuestionIndex] || !timerBarContainer || timerBarContainer.style.display === 'none') {
+        // 解答前、またはタイマーが作動していない場合は何もしない
+        return;
+    }
 
     isAutoAdvancePaused = !isAutoAdvancePaused;
     if (isAutoAdvancePaused) {
         clearTimeout(autoAdvanceTimer);
         clearInterval(autoAdvanceInterval);
-        // remainingAutoAdvanceTime はタイマーバー更新時に保存されている
         if (pauseResumeButton) {
             pauseResumeButton.textContent = '再開';
         }
-        if (timerBar) { // タイマーバーのアニメーションを即座に停止させる
-            const currentWidth = timerBar.style.width;
-            timerBar.style.transition = 'none';
-            timerBar.style.width = currentWidth;
+        if (timerBar) {
+            const currentWidth = window.getComputedStyle(timerBar).width; // 現在の計算済み幅を取得
+            timerBar.style.transition = 'none'; // アニメーションを即座に停止
+            timerBar.style.width = currentWidth; // 現在の幅を固定
         }
     } else {
         if (remainingAutoAdvanceTime > 0) {
             if (pauseResumeButton) pauseResumeButton.textContent = '一時停止';
             
-            // setTimeout を残り時間で再開
             autoAdvanceTimer = setTimeout(loadNextQuestion, remainingAutoAdvanceTime);
             
-            // setInterval (タイマーバー) を残り時間から再開
             if (timerBar && timerBarContainer.style.display === 'block') {
+                // タイマーバーのアニメーションを残り時間で再開
                 timerBar.style.transition = `width ${remainingAutoAdvanceTime / 1000}s linear`;
-                // requestAnimationFrame(() => { // 描画更新後に幅を変更
+                // requestAnimationFrame を挟むことで、一度 `transition: none` が適用された後に
+                // 新しいアニメーションが開始されることを保証しようと試みる
+                requestAnimationFrame(() => {
                     timerBar.style.width = '0%';
-                // });
-                 startAutoAdvanceInterval(true); // isResuming = true で残り時間からインターバル開始
+                });
             }
-        } else { // 残り時間がない場合は何もしないか、次の問題へ (現在のロジックではloadNextQuestionが呼ばれる)
-             if (pauseResumeButton) pauseResumeButton.textContent = '一時停止'; // 念のため
+            startAutoAdvanceInterval(true); // インターバルも再開
+        } else {
+             if (pauseResumeButton) pauseResumeButton.textContent = '一時停止';
         }
     }
 }
@@ -195,167 +211,414 @@ function resetAutoAdvanceState() {
     clearTimeout(autoAdvanceTimer);
     clearInterval(autoAdvanceInterval);
     isAutoAdvancePaused = false;
-    remainingAutoAdvanceTime = AUTO_ADVANCE_DELAY; // デフォルト遅延時間に戻す
+    remainingAutoAdvanceTime = AUTO_ADVANCE_DELAY;
     if (pauseResumeButton) {
         pauseResumeButton.textContent = '一時停止';
-        pauseResumeButton.style.display = 'none'; // デフォルトは非表示
+        pauseResumeButton.style.display = 'none';
     }
-    if (timerBarContainer) timerBarContainer.style.display = 'none';
+    if (timerBarContainer) {
+        timerBarContainer.style.display = 'none';
+    }
     if (timerBar) {
-        timerBar.style.transition = 'width 0.1s linear'; // 通常の遷移（瞬時更新用）
-        timerBar.style.width = '100%'; // 非表示時のデフォルト
+        timerBar.style.transition = 'none'; // リセット時はアニメーションなしで即時反映
+        timerBar.style.width = '100%';
     }
 }
 
 function startAutoAdvanceInterval(isResumingFromPause = false) {
-    clearInterval(autoAdvanceInterval); 
+    clearInterval(autoAdvanceInterval);
 
     let timeLeft = isResumingFromPause ? remainingAutoAdvanceTime : AUTO_ADVANCE_DELAY;
     
-    if (timerBar) { // タイマーバーの初期状態を設定
-        if (isResumingFromPause) {
-            // 再開時は現在の残り時間に基づいてバーの幅を設定し、そこから減少アニメーション
-             timerBar.style.transition = 'none'; // 一旦アニメーションを切り、
-             timerBar.style.width = `${(timeLeft / AUTO_ADVANCE_DELAY) * 100}%`; // 現在の割合に設定
-             requestAnimationFrame(() => { // DOM更新を待ってからアニメーション再開
+    // タイマーバーの初期状態とアニメーション設定
+    if (timerBar) {
+        timerBar.style.transition = 'none'; // まずアニメーションを解除
+        timerBar.style.width = `${(timeLeft / AUTO_ADVANCE_DELAY) * 100}%`; // 現在の割合に設定
+        
+        if (timeLeft > 0 && !isAutoAdvancePaused) { // 時間があり、一時停止中でなければアニメーション開始
+             requestAnimationFrame(() => { // DOM更新を待つ（より確実にするため）
                 timerBar.style.transition = `width ${timeLeft / 1000}s linear`;
                 timerBar.style.width = '0%';
              });
-        } else {
-            // 新規開始時は100%から0%へアニメーション
-            timerBar.style.transition = 'none';
-            timerBar.style.width = '100%';
-            requestAnimationFrame(() => {
-                timerBar.style.transition = `width ${AUTO_ADVANCE_DELAY / 1000}s linear`;
-                timerBar.style.width = '0%';
-            });
         }
     }
 
-    remainingAutoAdvanceTime = timeLeft; // 残り時間を初期化または設定
+    remainingAutoAdvanceTime = timeLeft;
 
     autoAdvanceInterval = setInterval(() => {
         if (isAutoAdvancePaused) {
-            return; // 一時停止中は何もしない
+            return; 
         }
         timeLeft -= 100;
-        remainingAutoAdvanceTime = Math.max(0, timeLeft); // 残り時間を更新 (0未満にならないように)
-
-        // タイマーバーの視覚的更新はCSSアニメーションに任せるので、ここでは不要
-        // const percentageLeft = (remainingAutoAdvanceTime / AUTO_ADVANCE_DELAY) * 100;
-        // if (timerBar) timerBar.style.width = `${Math.max(0, percentageLeft)}%`;
+        remainingAutoAdvanceTime = Math.max(0, timeLeft);
 
         if (remainingAutoAdvanceTime <= 0) {
             clearInterval(autoAdvanceInterval);
         }
     }, 100);
 }
-// ▲▲▲ 自動送り一時停止/再開関連の関数 ▲▲▲
 
+// --- メイン関数 ---
+function formatYearForDisplay(year) { /* ... (前回と同じ) ... */ if (year === 'すべて' || year === null || typeof year === 'undefined') return 'すべての年度'; const numericYear = parseInt(year.toString(), 10); if (isNaN(numericYear)) return year.toString(); if (numericYear >= 2019) { return `令和${numericYear - 2018}年 (${numericYear})`; } else if (numericYear >= 1989) { return `平成${numericYear - 1988}年 (${numericYear})`; } return `${numericYear}年度`; }
 
-// --- 関数の定義 ---
-function formatYearForDisplay(year) { if (year === 'すべて' || year === null || typeof year === 'undefined') return 'すべての年度'; const numericYear = parseInt(year.toString(), 10); if (isNaN(numericYear)) return year.toString(); if (numericYear >= 2019) { return `令和${numericYear - 2018}年 (${numericYear})`; } else if (numericYear >= 1989) { return `平成${numericYear - 1988}年 (${numericYear})`; } return `${numericYear}年度`; }
 function goToHome() {
-    resetAutoAdvanceState(); // ▼修正
+    resetAutoAdvanceState(); // 状態をリセット
     switchView(quizContentArea, selectionArea);
-    // ... (goToHomeの残りの処理)
+    switchView(resultsArea, selectionArea);
+    if (creditText) creditText.style.display = 'block';
+    currentQuestionIndex = 0;
+    score = 0;
+    currentQuizQuestions = [];
+    userAnswers = [];
+    const yearBtns = yearButtonsContainer.querySelectorAll('.year-button');
+    yearBtns.forEach(btn => btn.classList.remove('selected'));
+    const allYearBtn = Array.from(yearBtns).find(btn => btn.dataset.year === 'すべて');
+    if (allYearBtn) allYearBtn.classList.add('selected');
+    selectedYearValue = 'すべて';
+    const catButtons = categoryButtonsContainer.querySelectorAll('.category-button');
+    catButtons.forEach(btn => btn.classList.remove('selected'));
+    const allCategoryBtn = Array.from(catButtons).find(btn => btn.dataset.category === 'すべて');
+    if (allCategoryBtn) allCategoryBtn.classList.add('selected');
+    selectedCategoryValue = 'すべて';
+    checkResumeButton();
+    displayFeaturedQuestions();
+    updateFavoriteButtonIcon();
 }
+
 function handleRestartSameQuiz() {
-    resetAutoAdvanceState(); // ▼修正
-    if (currentQuizQuestions.length === 0) { goToHome(); return; }
-    // ... (handleRestartSameQuizの残りの処理)
-}
-function populateSelectors() { if (!yearButtonsContainer || !categoryButtonsContainer || !startQuizButton) return; yearButtonsContainer.innerHTML = ''; categoryButtonsContainer.innerHTML = ''; if (typeof allQuizData === 'undefined' || allQuizData.length === 0) { console.warn("クイズデータが空または未定義です。"); yearButtonsContainer.textContent = '年度データなし'; categoryButtonsContainer.textContent = '分野データなし'; startQuizButton.disabled = true; return; } startQuizButton.disabled = false; const years = ['すべて', ...new Set(allQuizData.map(q => q.year))].sort((a, b) => (a === 'すべて' ? -1 : b === 'すべて' ? 1 : Number(b) - Number(a))); const categories = ['すべて', ...new Set(allQuizData.map(q => q.category))].sort((a, b) => (a === 'すべて' ? -1 : b === 'すべて' ? 1 : String(a).localeCompare(String(b), 'ja'))); years.forEach(year => { const button = document.createElement('button'); button.textContent = formatYearForDisplay(year.toString()); button.dataset.year = year.toString(); button.className = 'year-button'; if (year.toString() === selectedYearValue) { button.classList.add('selected'); } button.addEventListener('click', () => { yearButtonsContainer.querySelectorAll('.year-button').forEach(btn => btn.classList.remove('selected')); button.classList.add('selected'); selectedYearValue = button.dataset.year; }); yearButtonsContainer.appendChild(button); }); categories.forEach(category => { const button = document.createElement('button'); button.textContent = category === 'すべて' ? 'すべて' : category; button.dataset.category = category; button.className = 'category-button'; if (category === selectedCategoryValue) { button.classList.add('selected'); } button.addEventListener('click', () => { categoryButtonsContainer.querySelectorAll('.category-button').forEach(btn => btn.classList.remove('selected')); button.classList.add('selected'); selectedCategoryValue = category; }); categoryButtonsContainer.appendChild(button); }); }
-function handleStartQuiz(isResuming = false) {
-    resetAutoAdvanceState(); // ▼修正
-    if (isResuming) { const progress = loadQuizProgress(); if (progress) { selectedYearValue = progress.selectedYear; selectedCategoryValue = progress.selectedCategory; currentQuestionIndex = progress.currentQuestionIndex; userAnswers = progress.userAnswers; score = progress.score; currentQuizQuestions = progress.currentQuizQuestions; currentSetYear = progress.currentSetYear; currentSetCategory = progress.currentSetCategory; currentSetScore = progress.currentSetScore; currentSetAttempted = progress.currentSetAttempted; updateYearButtonSelection(selectedYearValue); updateCategoryButtonSelection(selectedCategoryValue); } else { alert('保存されたデータが見つかりませんでした。新しくクイズを開始します。'); isResuming = false; } } if (!isResuming) { if (typeof allQuizData === 'undefined' || allQuizData.length === 0) { alert('クイズデータを読み込めませんでした。'); return; } currentQuizQuestions = allQuizData.filter(q => { const yearMatch = (selectedYearValue === 'すべて' || q.year.toString() === selectedYearValue); const categoryMatch = (selectedCategoryValue === 'すべて' || q.category === selectedCategoryValue); return yearMatch && categoryMatch; }); currentQuizQuestions.sort((a, b) => { if (a.year !== b.year) return a.year - b.year; const categoryOrder = ["衛生法規", "公衆衛生学", "栄養学", "食品学", "食品衛生学", "製菓理論", "製菓実技(和菓子)", "製菓実技(洋菓子)", "製菓実技(製パン)"]; const indexA = categoryOrder.indexOf(a.category); const indexB = categoryOrder.indexOf(b.category); if (indexA !== -1 && indexB !== -1) return indexA - indexB; return a.category.localeCompare(b.category); }); if (currentQuizQuestions.length === 0) { alert('選択された条件に該当する問題がありません。別の条件をお試しください。'); return; } currentQuestionIndex = 0; score = 0; userAnswers = new Array(currentQuizQuestions.length).fill(null); currentSetScore = 0; currentSetAttempted = 0; } if (currentQuizQuestions.length > 0 && currentQuizQuestions[currentQuestionIndex]) { currentSetYear = currentQuizQuestions[currentQuestionIndex].year; currentSetCategory = currentQuizQuestions[currentQuestionIndex].category; } else if (currentQuizQuestions.length > 0) { currentSetYear = currentQuizQuestions[0].year; currentSetCategory = currentQuizQuestions[0].category; } else { currentSetYear = null; currentSetCategory = null; } switchView(selectionArea, quizContentArea); if (resultsArea) resultsArea.style.display = 'none'; if (navigationArea) navigationArea.style.display = 'flex'; if (nextQuestionButton) { nextQuestionButton.textContent = '次の問題へ'; nextQuestionButton.style.display = 'none'; } if (prevQuestionButton) prevQuestionButton.disabled = true; if (creditText) creditText.style.display = 'none'; updateFavoriteButtonIcon(); loadQuestion(true); }
-
-function loadQuestion(isFirstLoadOrPrevious = false) {
-    resetAutoAdvanceState(); // ▼修正: タイマー関連の状態をリセット
-
-    if (!optionsContainer || !feedbackTextElement || !explanationTextElement || !questionInfoElement || !questionTextElement || !nextQuestionButton || !prevQuestionButton || !questionDetailsWrapper || !favoriteButton) {
-        console.error("One or more DOM elements for quiz question display are missing in loadQuestion.");
+    resetAutoAdvanceState(); // 状態をリセット
+    if (currentQuizQuestions.length === 0) {
+        goToHome();
         return;
     }
-    // ... (既存のloadQuestion処理) ...
-    const userAnswerInfo = userAnswers[currentQuestionIndex];
-    // ... (オプションボタン生成) ...
-    if (userAnswerInfo) { // 解答済みの場合
-        feedbackTextElement.textContent = userAnswerInfo.isCorrect ? '正解！' : '不正解...';
-        feedbackTextElement.classList.add(userAnswerInfo.isCorrect ? 'feedback-text-correct' : 'feedback-text-incorrect', 'feedback-animation');
-        explanationTextElement.textContent = `解説: ${currentQuestion.explanation || "解説はありません。"}`;
-        explanationTextElement.classList.add('feedback-animation');
-        
-        if (pauseResumeButton) pauseResumeButton.style.display = 'inline-flex'; // ▼追加: 一時停止ボタン表示
-        isAutoAdvancePaused = false; // 新しい問題なので一時停止は解除
-        if (pauseResumeButton) pauseResumeButton.textContent = '一時停止';
-
-        if(timerBarContainer && timerBar) {
-            timerBarContainer.style.display = 'block';
-            startAutoAdvanceInterval(); // タイマーバー更新開始 (残り時間はAUTO_ADVANCE_DELAY)
-        }
-        autoAdvanceTimer = setTimeout(loadNextQuestion, AUTO_ADVANCE_DELAY); // 自動送りタイマー開始
-    } else {
-        // 未解答の場合は一時停止ボタンなどを非表示 (resetAutoAdvanceStateで対応済み)
+    currentQuestionIndex = 0;
+    score = 0;
+    userAnswers = new Array(currentQuizQuestions.length).fill(null);
+    switchView(resultsArea, quizContentArea);
+    if (navigationArea) navigationArea.style.display = 'flex';
+    if (nextQuestionButton) {
+        nextQuestionButton.textContent = '次の問題へ';
+        nextQuestionButton.style.display = 'none';
     }
-    // ... (既存のloadQuestion処理) ...
+    if (prevQuestionButton) prevQuestionButton.disabled = true;
+    loadQuestion(true);
 }
 
-function loadPreviousQuestion() { 
-    resetAutoAdvanceState(); // ▼修正
-    if (currentQuestionIndex > 0) { currentQuestionIndex--; loadQuestion(true); } 
+function populateSelectors() { /* ... (前回と同じ、エラーチェックは重要) ... */ if (!yearButtonsContainer || !categoryButtonsContainer || !startQuizButton) return; yearButtonsContainer.innerHTML = ''; categoryButtonsContainer.innerHTML = ''; if (typeof allQuizData === 'undefined' || allQuizData.length === 0) { console.error("クイズデータ(allQuizData)が読み込めていません。populateSelectorsを中断します。"); yearButtonsContainer.textContent = '年度データなし'; categoryButtonsContainer.textContent = '分野データなし'; startQuizButton.disabled = true; return; } startQuizButton.disabled = false; const years = ['すべて', ...new Set(allQuizData.map(q => q.year))].sort((a, b) => (a === 'すべて' ? -1 : b === 'すべて' ? 1 : Number(b) - Number(a))); const categories = ['すべて', ...new Set(allQuizData.map(q => q.category))].sort((a, b) => (a === 'すべて' ? -1 : b === 'すべて' ? 1 : String(a).localeCompare(String(b), 'ja'))); years.forEach(year => { const button = document.createElement('button'); button.textContent = formatYearForDisplay(year.toString()); button.dataset.year = year.toString(); button.className = 'year-button'; if (year.toString() === selectedYearValue) { button.classList.add('selected'); } button.addEventListener('click', () => { yearButtonsContainer.querySelectorAll('.year-button').forEach(btn => btn.classList.remove('selected')); button.classList.add('selected'); selectedYearValue = button.dataset.year; }); yearButtonsContainer.appendChild(button); }); categories.forEach(category => { const button = document.createElement('button'); button.textContent = category === 'すべて' ? 'すべて' : category; button.dataset.category = category; button.className = 'category-button'; if (category === selectedCategoryValue) { button.classList.add('selected'); } button.addEventListener('click', () => { categoryButtonsContainer.querySelectorAll('.category-button').forEach(btn => btn.classList.remove('selected')); button.classList.add('selected'); selectedCategoryValue = category; }); categoryButtonsContainer.appendChild(button); }); }
+
+function handleStartQuiz(isResuming = false) {
+    resetAutoAdvanceState(); // 状態をリセット
+    // ... (isResuming時の処理は前回と同じ) ...
+    if (isResuming) { const progress = loadQuizProgress(); if (progress) { selectedYearValue = progress.selectedYear; selectedCategoryValue = progress.selectedCategory; currentQuestionIndex = progress.currentQuestionIndex; userAnswers = progress.userAnswers; score = progress.score; currentQuizQuestions = progress.currentQuizQuestions; currentSetYear = progress.currentSetYear; currentSetCategory = progress.currentSetCategory; currentSetScore = progress.currentSetScore; currentSetAttempted = progress.currentSetAttempted; updateYearButtonSelection(selectedYearValue); updateCategoryButtonSelection(selectedCategoryValue); } else { alert('保存されたデータが見つかりませんでした。新しくクイズを開始します。'); isResuming = false; } }
+
+    if (!isResuming) {
+        if (typeof allQuizData === 'undefined' || allQuizData.length === 0) {
+            alert('クイズデータを読み込めませんでした。ファイルパスや内容を確認してください。');
+            console.error("allQuizData is undefined or empty in handleStartQuiz.");
+            return;
+        }
+        // ... (currentQuizQuestions のフィルタリングとソートは前回と同じ) ...
+        currentQuizQuestions = allQuizData.filter(q => { const yearMatch = (selectedYearValue === 'すべて' || q.year.toString() === selectedYearValue); const categoryMatch = (selectedCategoryValue === 'すべて' || q.category === selectedCategoryValue); return yearMatch && categoryMatch; }); currentQuizQuestions.sort((a, b) => { if (a.year !== b.year) return a.year - b.year; const categoryOrder = ["衛生法規", "公衆衛生学", "栄養学", "食品学", "食品衛生学", "製菓理論", "製菓実技(和菓子)", "製菓実技(洋菓子)", "製菓実技(製パン)"]; const indexA = categoryOrder.indexOf(a.category); const indexB = categoryOrder.indexOf(b.category); if (indexA !== -1 && indexB !== -1) return indexA - indexB; return a.category.localeCompare(b.category); }); if (currentQuizQuestions.length === 0) { alert('選択された条件に該当する問題がありません。別の条件をお試しください。'); return; } currentQuestionIndex = 0; score = 0; userAnswers = new Array(currentQuizQuestions.length).fill(null); currentSetScore = 0; currentSetAttempted = 0;
+    }
+    // ... (残りのhandleStartQuiz処理は前回と同じ) ...
+    if (currentQuizQuestions.length > 0 && currentQuizQuestions[currentQuestionIndex]) { currentSetYear = currentQuizQuestions[currentQuestionIndex].year; currentSetCategory = currentQuizQuestions[currentQuestionIndex].category; } else if (currentQuizQuestions.length > 0) { currentSetYear = currentQuizQuestions[0].year; currentSetCategory = currentQuizQuestions[0].category; } else { currentSetYear = null; currentSetCategory = null; } switchView(selectionArea, quizContentArea); if (resultsArea) resultsArea.style.display = 'none'; if (navigationArea) navigationArea.style.display = 'flex'; if (nextQuestionButton) { nextQuestionButton.textContent = '次の問題へ'; nextQuestionButton.style.display = 'none'; } if (prevQuestionButton) prevQuestionButton.disabled = true; if (creditText) creditText.style.display = 'none'; updateFavoriteButtonIcon(); loadQuestion(true); 
+}
+
+function loadQuestion(isFirstLoadOrPrevious = false) {
+    resetAutoAdvanceState(); // 状態をリセット
+
+    // ... (DOM要素の存在チェックは前回と同じ) ...
+    if (!optionsContainer || !feedbackTextElement || !explanationTextElement || !questionInfoElement || !questionTextElement || !nextQuestionButton || !prevQuestionButton || !questionDetailsWrapper || !favoriteButton) { console.error("One or more DOM elements for quiz question display are missing in loadQuestion."); return; }
+
+    if (currentQuizQuestions.length === 0) { 
+        console.warn("No questions to display. CurrentQuizQuestions is empty.");
+        goToHome(); 
+        return;
+    }
+    if (currentQuestionIndex >= currentQuizQuestions.length) {
+        showResults();
+        return;
+    }
+    updateFavoriteButtonIcon(); 
+
+    if (currentQuestionIndex > 0 && (selectedYearValue === 'すべて' || selectedCategoryValue === 'すべて')) {
+        const prevQuestion = currentQuizQuestions[currentQuestionIndex - 1];
+        const currentQ = currentQuizQuestions[currentQuestionIndex];
+        if (currentQ && prevQuestion && (currentQ.year !== prevQuestion.year || currentQ.category !== prevQuestion.category)) {
+            currentSetYear = prevQuestion.year; 
+            currentSetCategory = prevQuestion.category;
+            showInterimResults();
+            return; 
+        }
+    }
+    const currentQForSet = currentQuizQuestions[currentQuestionIndex];
+    if(currentQForSet && (currentQForSet.year !== currentSetYear || currentQForSet.category !== currentSetCategory)){
+        currentSetYear = currentQForSet.year;
+        currentSetCategory = currentQForSet.category;
+        currentSetScore = 0;
+        currentSetAttempted = 0;
+    }
+    
+    const animateQuestionChange = () => {
+        // ... (既存のオプション等クリア処理) ...
+        optionsContainer.innerHTML = '';
+        feedbackTextElement.textContent = '';
+        explanationTextElement.textContent = '';
+        feedbackTextElement.className = 'text-lg font-semibold';
+        explanationTextElement.className = 'text-sm mt-1.5 leading-snug';
+
+
+        const currentQuestion = currentQuizQuestions[currentQuestionIndex];
+        if (!currentQuestion) { 
+            console.error("Critical Error: currentQuestion is undefined at index", currentQuestionIndex, "Total questions:", currentQuizQuestions.length);
+            goToHome(); 
+            alert("問題データの読み込み中にエラーが発生しました。ホームに戻ります。");
+            return;
+        }
+        // ... (問題文、選択肢の表示処理は前回と同じ) ...
+        questionInfoElement.textContent = `${formatYearForDisplay(currentQuestion.year.toString())} - ${currentQuestion.category}`;
+        const questionText = currentQuestion.question || "問題文がありません";
+        questionTextElement.innerHTML = `問題 ${currentQuestionIndex + 1}: ${questionText.replace(/\n/g, '<br>')}`;
+
+        const userAnswerInfo = userAnswers[currentQuestionIndex];
+        const options = Array.isArray(currentQuestion.options) ? currentQuestion.options : [];
+        if (options.length === 0 && currentQuestion.question) {
+            console.warn("No options for question:", currentQuestion.question);
+             optionsContainer.innerHTML = '<p class="text-center text-red-500 dark:text-red-400">この問題には選択肢が登録されていません。</p>';
+        }
+        options.forEach(optionText => {
+            const button = document.createElement('button');
+            button.textContent = optionText;
+            button.className = 'option-button w-full text-left p-3 sm:p-4 border rounded-lg transition';
+            if (userAnswerInfo) {
+                button.disabled = true;
+                if (optionText === currentQuestion.correctAnswer) button.classList.add('selected-correct');
+                else if (optionText === userAnswerInfo.selected) button.classList.add('selected-incorrect');
+            } else {
+                button.disabled = false;
+                button.onclick = () => selectAnswer(optionText, currentQuestion.correctAnswer, currentQuestion.explanation);
+            }
+            optionsContainer.appendChild(button);
+        });
+
+
+        if (userAnswerInfo) { // 解答済みの場合
+            feedbackTextElement.textContent = userAnswerInfo.isCorrect ? '正解！' : '不正解...';
+            // ... (フィードバック表示) ...
+            feedbackTextElement.classList.add(userAnswerInfo.isCorrect ? 'feedback-text-correct' : 'feedback-text-incorrect', 'feedback-animation');
+            explanationTextElement.textContent = `解説: ${currentQuestion.explanation || "解説はありません。"}`;
+            explanationTextElement.classList.add('feedback-animation');
+
+            if (pauseResumeButton) pauseResumeButton.style.display = 'inline-flex';
+            isAutoAdvancePaused = false; 
+            if (pauseResumeButton) pauseResumeButton.textContent = '一時停止';
+
+            if (timerBarContainer && timerBar) {
+                timerBarContainer.style.display = 'block';
+                startAutoAdvanceInterval(); 
+            }
+            autoAdvanceTimer = setTimeout(loadNextQuestion, AUTO_ADVANCE_DELAY);
+        }
+        // ... (prev/nextボタンの状態更新、スコア表示などは前回と同じ) ...
+        prevQuestionButton.disabled = currentQuestionIndex === 0;
+        if (userAnswerInfo) {
+            nextQuestionButton.style.display = 'inline-flex';
+            if (currentQuestionIndex === currentQuizQuestions.length - 1) {
+                nextQuestionButton.textContent = '結果を見る';
+            } else {
+                nextQuestionButton.textContent = '次の問題へ';
+            }
+        } else {
+            nextQuestionButton.style.display = 'none';
+        }
+        updateScoreDisplay();
+        updateFavoriteButtonIcon();
+
+        if (!isFirstLoadOrPrevious) {
+            questionDetailsWrapper.classList.remove('question-exit', 'question-enter-active');
+            questionDetailsWrapper.classList.add('question-enter');
+            requestAnimationFrame(() => {
+                questionDetailsWrapper.classList.add('question-enter-active');
+            });
+        } else {
+             questionDetailsWrapper.classList.remove('question-exit', 'question-enter');
+             requestAnimationFrame(() => { 
+                questionDetailsWrapper.classList.add('question-enter-active');
+             });
+        }
+    };
+    // ... (アニメーション呼び出し部分は前回と同じ) ...
+    if (!isFirstLoadOrPrevious && questionDetailsWrapper.classList.contains('question-enter-active')) {
+        questionDetailsWrapper.classList.add('question-exit');
+        questionDetailsWrapper.classList.remove('question-enter-active', 'question-enter');
+        setTimeout(animateQuestionChange, 250); 
+    } else {
+        animateQuestionChange();
+    }
+}
+
+function loadPreviousQuestion() {
+    resetAutoAdvanceState();
+    if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        loadQuestion(true);
+    }
 }
 
 function selectAnswer(selectedOption, correctAnswer, explanation) {
-    // resetAutoAdvanceState(); は loadQuestion() の冒頭で呼ばれるのでここでは不要
-    if (userAnswers[currentQuestionIndex] !== null) return; 
-    const isCorrect = selectedOption === correctAnswer; 
-    userAnswers[currentQuestionIndex] = { selected: selectedOption, isCorrect: isCorrect }; 
-    if (isCorrect) { score++; currentSetScore++; if (correctSound) correctSound(); } else { if (incorrectSound) incorrectSound(); } 
-    currentSetAttempted++; 
-    saveQuizProgress(); 
-    loadQuestion(); 
+    // resetAutoAdvanceStateはloadQuestion内で呼ばれるのでここでは不要
+    if (userAnswers[currentQuestionIndex] !== null) return;
+    const isCorrect = selectedOption === correctAnswer;
+    userAnswers[currentQuestionIndex] = { selected: selectedOption, isCorrect: isCorrect };
+    if (isCorrect) {
+        score++;
+        currentSetScore++;
+        if (correctSound) correctSound();
+    } else {
+        if (incorrectSound) incorrectSound();
+    }
+    currentSetAttempted++;
+    saveQuizProgress();
+    loadQuestion(); // loadQuestionがタイマーをリセットして開始する
 }
-function updateScoreDisplay() { if (scoreTextElement) { const answeredCount = userAnswers.filter(ans => ans !== null).length; scoreTextElement.textContent = `スコア: ${score} / ${answeredCount}`; } }
+
+function updateScoreDisplay() { /* ... (前回と同じ) ... */ if (scoreTextElement) { const answeredCount = userAnswers.filter(ans => ans !== null).length; scoreTextElement.textContent = `スコア: ${score} / ${answeredCount}`; } }
 
 function loadNextQuestion() {
-    resetAutoAdvanceState(); // ▼修正
-    if (currentQuestionIndex < currentQuizQuestions.length - 1) { 
-        currentQuestionIndex++; 
-        loadQuestion(); 
-    } else { 
-        showResults(); 
-    } 
+    resetAutoAdvanceState();
+    if (currentQuestionIndex < currentQuizQuestions.length - 1) {
+        currentQuestionIndex++;
+        loadQuestion();
+    } else {
+        showResults();
+    }
 }
 
 function showResults() {
-    resetAutoAdvanceState(); // ▼修正
+    resetAutoAdvanceState();
+    // ... (結果表示処理は前回と同じ) ...
     switchView(quizContentArea, resultsArea);
-    // ... (showResultsの残りの処理)
+    if (finalScoreTextElement && finalScorePercentageElement && resultsQuestionsListUL) {
+        const totalQuestions = currentQuizQuestions.length;
+        const percentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0;
+        
+        finalScoreTextElement.textContent = `0 / ${totalQuestions}`;
+        finalScorePercentageElement.textContent = `(0.0%)`;
+        finalScoreTextElement.style.animation = 'none'; 
+        finalScorePercentageElement.style.animation = 'none';
+        finalScorePercentageElement.style.opacity = '0';
+        resultsQuestionsListUL.innerHTML = ''; 
+
+        requestAnimationFrame(() => { 
+            finalScoreTextElement.style.animation = '';
+            finalScorePercentageElement.style.animation = '';
+            
+            let displayedScore = 0;
+            const countUpDuration = 1000; 
+            const steps = score > 0 ? score : 1; 
+            const stepDuration = countUpDuration / steps;
+
+            const interval = setInterval(() => {
+                if (displayedScore < score) {
+                    displayedScore++;
+                    const currentPercentage = totalQuestions > 0 ? (displayedScore / totalQuestions) * 100 : 0;
+                    finalScoreTextElement.textContent = `${displayedScore} / ${totalQuestions}`;
+                    finalScorePercentageElement.textContent = `(${currentPercentage.toFixed(1)}%)`;
+                } else {
+                    clearInterval(interval);
+                    finalScoreTextElement.textContent = `${score} / ${totalQuestions}`;
+                    finalScorePercentageElement.textContent = `(${percentage.toFixed(1)}%)`;
+                    
+                    if (percentage >= 80) { 
+                        if (scoreSoundGood) scoreSoundGood();
+                        triggerConfetti(80); 
+                    } else if (percentage >= 50) { 
+                        if (scoreSoundOkay) scoreSoundOkay();
+                        triggerConfetti(40);
+                    } else { 
+                        if (scoreSoundBad) scoreSoundBad();
+                        triggerSmokePuffs(5);
+                    }
+                }
+            }, stepDuration);
+        });
+        
+        currentQuizQuestions.forEach((q, index) => {
+            const li = document.createElement('li');
+            const userAnswer = userAnswers[index];
+            let questionStatus = '';
+            if (userAnswer && !userAnswer.isCorrect) {
+                questionStatus = '<span class="results-question-incorrect">✗ </span>';
+            }
+            li.innerHTML = `${questionStatus}${index + 1}. ${q.question.length > 50 ? q.question.substring(0,50) + "..." : q.question}`;
+            resultsQuestionsListUL.appendChild(li);
+        });
+
+        const quizResult = { date: new Date().toISOString(), year: selectedYearValue, category: selectedCategoryValue, totalQuestions: totalQuestions, correctAnswers: score, percentage: percentage };
+        saveScore(quizResult);
+        clearQuizProgress(); 
+        checkResumeButton(); 
+    }
 }
 
-// ... (残りの関数 triggerConfetti, checkResumeButton, etc. は変更なし) ...
+// triggerConfetti, triggerSmokePuffs, checkResumeButton, displayFeaturedQuestions, updateYearButtonSelection, updateCategoryButtonSelection
+// (省略...前回と同じ)
+function triggerConfetti(count = 50) { if (!confettiContainer) return; confettiContainer.innerHTML = ''; for (let i = 0; i < count; i++) { const confetti = document.createElement('div'); confetti.classList.add('confetti'); confetti.style.left = Math.random() * 100 + 'vw'; confetti.style.animationDelay = Math.random() * 1.5 + 's'; const colors = ['#f94144', '#f3722c', '#f8961e', '#f9c74f', '#90be6d', '#43aa8b', '#577590']; confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]; confetti.style.transform = `scale(${Math.random() * 0.6 + 0.4}) rotate(${Math.random() * 360}deg)`; confetti.style.width = Math.random() * 6 + 4 + 'px'; confetti.style.height = Math.random() * 12 + 8 + 'px'; confetti.style.setProperty('--random-x-end', (Math.random() - 0.5) * 200 + 'px'); confettiContainer.appendChild(confetti); } }
+function triggerSmokePuffs(count = 5) { if (!confettiContainer) return; confettiContainer.innerHTML = ''; for (let i = 0; i < count; i++) { const smoke = document.createElement('div'); smoke.classList.add('smoke-puff'); smoke.style.left = Math.random() * 80 + 10 + 'vw'; smoke.style.bottom = Math.random() * 20 + 'vh'; smoke.style.animationDelay = Math.random() * 0.5 + 's'; confettiContainer.appendChild(smoke); } }
+function checkResumeButton() { if (resumeQuizButton) { const savedProgress = localStorage.getItem(QUIZ_PROGRESS_KEY); if (savedProgress) { resumeQuizButton.style.display = 'inline-flex'; } else { resumeQuizButton.style.display = 'none'; } } }
+function displayFeaturedQuestions() { if (!allQuizData || allQuizData.length === 0 || !featuredQuestionsArea || !featuredQuestionsContainer) { if (featuredQuestionsArea) featuredQuestionsArea.style.display = 'none'; return; } featuredQuestionsContainer.innerHTML = ''; let featured = []; const latestYear = Math.max(...allQuizData.map(q => q.year).filter(y => !isNaN(y))); const categoriesToShow = ["食品衛生学", "衛生法規"]; categoriesToShow.forEach(category => { const questionsInCategory = allQuizData.filter(q => q.category === category && q.year === latestYear); if (questionsInCategory.length > 0) { featured.push(questionsInCategory[0]); } }); if (featured.length < 2 && allQuizData.length > 0) { const latestQuestions = allQuizData.filter(q => q.year === latestYear).slice(0, 2 - featured.length); featured = [...new Set([...featured, ...latestQuestions])];} if (featured.length > 0) { featured.slice(0, 2).forEach(question => { const qElement = document.createElement('div'); qElement.className = 'featured-question-item'; qElement.innerHTML = `<p class="text-xs">${formatYearForDisplay(question.year.toString())} - ${question.category}</p><p class="font-medium text-sm mt-1">${(question.question || "").length > 80 ? (question.question || "").substring(0, 80) + "..." : (question.question || "")}</p>`; qElement.addEventListener('click', () => { selectedYearValue = question.year.toString(); selectedCategoryValue = question.category; updateYearButtonSelection(selectedYearValue); updateCategoryButtonSelection(selectedCategoryValue); handleStartQuiz(false); }); featuredQuestionsContainer.appendChild(qElement); }); featuredQuestionsArea.style.display = 'block'; } else { featuredQuestionsArea.style.display = 'none'; } }
+function updateYearButtonSelection(year) { const yearBtns = yearButtonsContainer.querySelectorAll('.year-button'); yearBtns.forEach(btn => { btn.classList.remove('selected'); if (btn.dataset.year === year) { btn.classList.add('selected'); } }); }
+function updateCategoryButtonSelection(category) { const catButtons = categoryButtonsContainer.querySelectorAll('.category-button'); catButtons.forEach(btn => { btn.classList.remove('selected'); if (btn.dataset.category === category) { btn.classList.add('selected'); } }); }
+
 // --- 初期化 ---
 document.addEventListener('DOMContentLoaded', () => {
-    initializeTheme(); 
-    const savedMuteState = localStorage.getItem('quizMuted');
-    if (savedMuteState !== null) isMuted = JSON.parse(savedMuteState);
-    updateMuteButtonIcon();
-    initializeAudio(); 
-    favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY)) || [];
+    console.log("DOM fully loaded and parsed"); // 読み込み確認用ログ
+    try {
+        initializeTheme();
+        const savedMuteState = localStorage.getItem('quizMuted');
+        if (savedMuteState !== null) isMuted = JSON.parse(savedMuteState);
+        updateMuteButtonIcon();
+        initializeAudio();
+        favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY)) || [];
 
-    populateSelectors();
-    checkResumeButton();
-    displayFeaturedQuestions();
-    resetAutoAdvanceState(); // ▼追加: 初期状態でタイマー関連をリセット
+        // allQuizData の読み込みを待つか、またはここでチェックする
+        if (typeof allQuizData !== 'undefined' && allQuizData.length > 0) {
+            console.log("Quiz data (allQuizData) is available.");
+            populateSelectors();
+            displayFeaturedQuestions();
+        } else {
+            // allQuizData がまだ読み込まれていない場合のフォールバックやエラー表示
+            // もし allQuizData が quiz_data_loader.js で非同期にロードされる場合、
+            // ここでの呼び出しは早すぎる可能性がある。
+            // ただし、現在の import 構文では、allQuizData は同期的に利用可能であるはず。
+            // もし quiz_data_loader.js が空の配列を返す場合や、
+            // data_rX.js が存在しない場合などにここに来る。
+            console.error("Quiz data (allQuizData) is NOT available or empty at DOMContentLoaded. Check data file loading and paths.");
+            if (yearButtonsContainer) yearButtonsContainer.textContent = '年度データ読込エラー';
+            if (categoryButtonsContainer) categoryButtonsContainer.textContent = '分野データ読込エラー';
+            if (startQuizButton) startQuizButton.disabled = true;
+        }
+        
+        checkResumeButton(); // これは allQuizData に依存しない
+        resetAutoAdvanceState(); // タイマー関連の初期化
 
-    if (selectionArea) {
-        selectionArea.style.display = 'flex'; 
-        selectionArea.classList.add('active');
-    } else {
-        console.error("selectionArea not found");
+        if (selectionArea) {
+            selectionArea.style.display = 'flex'; // 初期表示をflexに変更
+            selectionArea.classList.add('active');
+            console.log("Selection area displayed.");
+        } else {
+            console.error("selectionArea not found");
+        }
+        if (quizContentArea) quizContentArea.style.display = 'none'; else console.error("quizContentArea not found");
+        if (resultsArea) resultsArea.style.display = 'none'; else console.error("resultsArea not found");
+        if (creditText) creditText.style.display = 'block'; else console.error("creditText not found");
+
+    } catch (e) {
+        console.error("Error during DOMContentLoaded initialization:", e);
+        // ユーザーにエラーを通知するUIを表示することも検討
+        const body = document.querySelector('body');
+        if (body) {
+            body.innerHTML = `<div style="color: red; padding: 20px; text-align: center;">初期化中にエラーが発生しました。コンソールを確認してください。詳細: ${e.message}</div>`;
+        }
     }
-    if (quizContentArea) quizContentArea.style.display = 'none'; else console.error("quizContentArea not found");
-    if (resultsArea) resultsArea.style.display = 'none'; else console.error("resultsArea not found");
-    if (creditText) creditText.style.display = 'block'; else console.error("creditText not found");
 });
