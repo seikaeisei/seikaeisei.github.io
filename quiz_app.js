@@ -119,7 +119,7 @@ function interruptQuiz() { if (interimResultsModal) interimResultsModal.classLis
 function formatYearForDisplay(year) {
     if (year === 'すべて' || year === null || typeof year === 'undefined') return 'すべての年度';
     const numericYear = parseInt(year.toString(), 10);
-    if (isNaN(numericYear)) return year.toString(); // 数値でなければそのまま返す
+    if (isNaN(numericYear)) return year.toString();
 
     if (numericYear >= 2019) {
         return `令和${numericYear - 2018}年 (${numericYear})`;
@@ -266,7 +266,7 @@ function loadQuestion(isFirstLoadOrPrevious = false) {
         const prevQuestion = currentQuizQuestions[currentQuestionIndex - 1];
         const currentQ = currentQuizQuestions[currentQuestionIndex];
         if (currentQ && prevQuestion && (currentQ.year !== prevQuestion.year || currentQ.category !== prevQuestion.category)) {
-            currentSetYear = prevQuestion.year;
+            currentSetYear = prevQuestion.year; 
             currentSetCategory = prevQuestion.category;
             showInterimResults();
             return; 
@@ -291,11 +291,12 @@ function loadQuestion(isFirstLoadOrPrevious = false) {
         if (!currentQuestion) { console.error("Error: currentQuestion is undefined at index", currentQuestionIndex); goToHome(); alert("問題の読み込みに失敗しました。ホームに戻ります。"); return; }
         
         questionInfoElement.textContent = `${formatYearForDisplay(currentQuestion.year.toString())} - ${currentQuestion.category}`;
-        const questionText = currentQuestion.question || ""; // null/undefined チェック
+        const questionText = currentQuestion.question || "";
         questionTextElement.innerHTML = `問題 ${currentQuestionIndex + 1}: ${questionText.replace(/\n/g, '<br>')}`;
 
         const userAnswerInfo = userAnswers[currentQuestionIndex];
-        currentQuestion.options.forEach(optionText => {
+        const options = Array.isArray(currentQuestion.options) ? currentQuestion.options : [];
+        options.forEach(optionText => {
             const button = document.createElement('button');
             button.textContent = optionText;
             button.className = 'option-button w-full text-left p-3 sm:p-4 border rounded-lg transition';
@@ -313,7 +314,7 @@ function loadQuestion(isFirstLoadOrPrevious = false) {
         if (userAnswerInfo) {
             feedbackTextElement.textContent = userAnswerInfo.isCorrect ? '正解！' : '不正解...';
             feedbackTextElement.classList.add(userAnswerInfo.isCorrect ? 'feedback-text-correct' : 'feedback-text-incorrect', 'feedback-animation');
-            explanationTextElement.textContent = `解説: ${currentQuestion.explanation || ""}`; // explanation も null/undefined チェック
+            explanationTextElement.textContent = `解説: ${currentQuestion.explanation || ""}`;
             explanationTextElement.classList.add('feedback-animation');
         }
 

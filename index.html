@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>製菓衛生師試験 過去問学習サイト (最終版)</title>
+    <title>製菓衛生師試験 過去問学習サイト (PWA対応)</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#007aff"/>
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <link rel="stylesheet" href="style.css">
@@ -29,7 +35,6 @@
                     特に、<strong>令和3年度および令和2年度の問題はデータが不完全（途中まで）</strong>です。<br>
                     学習の際は、必ず公式の過去問題集等と照らし合わせてご利用いただき、あくまで参考情報としてご活用ください。</p>
                 </div>
-
                 <div>
                     <label for="year-buttons-container">年度を選択:</label>
                     <div id="year-buttons-container" class="year-button-container">
@@ -58,6 +63,11 @@
                     <div id="featured-questions-container" class="space-y-2">
                     </div>
                 </div>
+                <div id="citation-area" class="mt-4 text-xs">
+                    <p><strong>引用元情報:</strong></p>
+                    <p>・問題文: <a href="https://www.kouiki-kansai.jp/koikirengo/jisijimu/shikakumenkyo/seika_top/seikaeiseisisiken/index.html" target="_blank" rel="noopener noreferrer">関西広域連合 製菓衛生師試験ページ</a> より引用した過去問題に基づいています。</p>
+                    <p>・アプリアイコンの一部: <a href="https://stockmaterial.net/" target="_blank" rel="noopener noreferrer">stockmaterial.net</a> 様の素材を利用させていただきました。</p>
+                </div>
                 <p id="credit-text">このサイトはGeminiによって作られました</p>
             </div>
 
@@ -77,11 +87,11 @@
                     <p id="explanation-text"></p>
                 </div>
                 <div id="navigation-area">
-                    <button id="prev-question-button" class="apple-button apple-button-control" disabled>前の問題へ</button>
-                    <p id="score-text">スコア: 0/0</p>
-                    <button id="next-question-button" class="apple-button apple-button-primary" style="display: none;">
+                    <button id="next-question-button" class="apple-button apple-button-primary">
                         次の問題へ
                     </button>
+                    <p id="score-text">スコア: 0/0</p>
+                    <button id="prev-question-button" class="apple-button apple-button-control" disabled>前の問題へ</button>
                 </div>
             </div>
 
@@ -142,5 +152,18 @@
     </div>
 
     <script type="module" src="quiz_app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js') // Ensure the path is correct
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>
