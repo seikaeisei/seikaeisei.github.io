@@ -1,22 +1,22 @@
 // service-worker.js
 
-const CACHE_NAME = 'seika-quiz-cache-v2'; // キャッシュバージョンを更新
+const CACHE_NAME = 'seika-quiz-cache-v3'; // キャッシュバージョンを更新
 const urlsToCache = [
-  '.', // ルート (index.html を想定)
-  'index.html',
-  'style.css',
-  'quiz_app.js',
-  'manifest.json', // マニフェストファイルもキャッシュ
-  'data/quiz_data_loader.js',
-  // データファイル (必要に応じて追加・更新)
-  'data/data_r6.js',
-  'data/data_r5.js',
-  'data/data_r4.js',
-  'data/data_r3.js',
-  'data/data_r2.js',
+  './', // ルート (index.html を想定)
+  './index.html',
+  './style.css',
+  './quiz_app.js',
+  './manifest.json',
+  './data/quiz_data_loader.js',
+  // データファイル (実際のファイル名に合わせてください)
+  './data/data_r6.js',
+  './data/data_r5.js',
+  './data/data_r4.js',
+  './data/data_r3.js',
+  './data/data_r2.js',
   // アイコン (実際のパスに合わせてください)
-  'icons/icon-192x192.png',
-  'icons/icon-512x512.png',
+  './icons/icon-192x192.png',
+  './icons/icon-512x512.png',
   // CDNリソース (キャッシュ戦略に注意)
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js',
@@ -28,13 +28,12 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Opened cache and caching initial assets');
-        // 外部リソースは失敗してもインストールをブロックしないように個別処理
-        const independentPromises = urlsToCache.map(url => {
+        const promises = urlsToCache.map(url => {
           return cache.add(new Request(url, {cache: 'reload'})).catch(err => {
             console.warn(`Failed to cache ${url} during install:`, err);
           });
         });
-        return Promise.all(independentPromises);
+        return Promise.all(promises);
       })
       .catch(error => {
         console.error('Failed to open cache during install:', error);
@@ -66,17 +65,13 @@ self.addEventListener('fetch', event => {
         if (response) {
           return response; // キャッシュから返す
         }
-        // キャッシュになければネットワークから取得
         return fetch(event.request).then(
           networkResponse => {
-            // 有効なレスポンスで、かつ基本的なリソースタイプであればキャッシュする
             if (!networkResponse || networkResponse.status !== 200 || (networkResponse.type !== 'basic' && networkResponse.type !== 'cors')) {
               return networkResponse;
             }
-            // CORSリクエストの場合、レスポンスが不透明(opaque)になることがあるため、
-            // キャッシュする前にチェックするか、特定のオリジンのみキャッシュするなどの戦略が必要
-            // ここでは基本的なリソースをキャッシュする想定
-            if (networkResponse.type === 'basic' || urlsToCache.includes(event.request.url)) {
+            // CORSリクエストや重要なアセットのみキャッシュするなど、戦略を調整可能
+            if (urlsToCache.includes(event.request.url) || event.request.url.startsWith(self.location.origin)) {
                 const responseToCache = networkResponse.clone();
                 caches.open(CACHE_NAME)
                   .then(cache => {
@@ -86,9 +81,8 @@ self.addEventListener('fetch', event => {
             return networkResponse;
           }
         ).catch(error => {
-          console.error('Fetch failed; returning offline page instead.', error);
-          // オフラインページを返すなどのフォールバック処理 (今回は省略)
-          // return caches.match('/offline.html');
+          console.error('Fetch failed for:', event.request.url, error);
+          // オフラインページを返すなどのフォールバック処理
         });
       })
   );

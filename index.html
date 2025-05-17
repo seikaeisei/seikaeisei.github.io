@@ -2,13 +2,14 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>製菓衛生師試験 過去問学習サイト (PWA対応)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>製菓衛生師試験 過去問学習サイト (最終版)</title>
 
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#007aff"/>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icons/icon-192x192.png">
-
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
@@ -57,6 +58,9 @@
                  <button id="view-history-button" class="apple-button apple-button-control w-full mt-3 text-sm">
                     過去の成績を見る
                 </button>
+                <button id="view-favorites-button" class="apple-button apple-button-control w-full mt-2 text-sm">
+                    お気に入り問題を見る
+                </button>
                 
                 <div id="featured-questions-area" class="mt-6 pt-4 border-t" style="display: none;">
                     <h3 class="text-md font-semibold mb-2 text-center">注目問題ピックアップ</h3>
@@ -72,9 +76,10 @@
             </div>
 
             <div id="quiz-content-area" style="display: none;" class="view-transition">
-                <div class="flex justify-between items-center mb-3">
+                <div class="quiz-header-controls">
                     <button id="home-button-quiz" class="apple-button apple-button-control text-sm">ホームへ</button>
                     <p id="question-info"></p>
+                    <button id="favorite-button" class="icon-button" title="お気に入りに追加/削除"></button>
                 </div>
                 <div id="question-details-wrapper" class="question-content-item">
                     <div id="question-area">
@@ -82,16 +87,19 @@
                         <div id="options-container"></div>
                     </div>
                 </div>
-                <div id="feedback-area">
+                <div id="feedback-area"> {/* タイマーバーはこの要素内に追加 */}
                     <p id="feedback-text"></p>
                     <p id="explanation-text"></p>
+                    <div class="timer-bar-container" style="display: none;">
+                        <div id="timer-bar"></div>
+                    </div>
                 </div>
-                <div id="navigation-area">
-                    <button id="next-question-button" class="apple-button apple-button-primary">
+                <div id="navigation-area" class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2 border-t">
+                    <button id="next-question-button" class="apple-button apple-button-primary w-full order-1 sm:order-3" style="display: none;">
                         次の問題へ
                     </button>
-                    <p id="score-text">スコア: 0/0</p>
-                    <button id="prev-question-button" class="apple-button apple-button-control" disabled>前の問題へ</button>
+                    <p id="score-text" class="font-semibold order-2 sm:order-2 mb-2 sm:mb-0 text-sm sm:text-base">スコア: 0/0</p>
+                    <button id="prev-question-button" class="apple-button apple-button-control w-full order-3 sm:order-1" disabled>前の問題へ</button>
                 </div>
             </div>
 
@@ -100,6 +108,10 @@
                 <h2>クイズ終了！</h2>
                 <p id="final-score-text"></p>
                 <p id="final-score-percentage"></p>
+                <div id="results-questions-list" class="text-left my-4 max-h-60 overflow-y-auto p-2 border rounded-md dark:border-gray-700">
+                    <h4 class="font-semibold mb-2 text-center">出題一覧 (✗は不正解)</h4>
+                    <ul></ul>
+                </div>
                 <div class="flex">
                     <button id="restart-quiz-button" class="apple-button apple-button-primary">
                         同じ条件で再挑戦
@@ -151,11 +163,21 @@
         </div>
     </div>
 
+    <div id="favorites-modal" style="display: none;">
+        <div class="modal-content">
+            <h3>お気に入り問題一覧</h3>
+            <ul id="favorites-list">
+            </ul>
+            <button id="clear-favorites-button" class="apple-button apple-button-secondary text-sm mt-4 mr-2">全て解除</button>
+            <button id="close-favorites-modal-button" class="apple-button apple-button-control text-sm mt-4 modal-close-button">閉じる</button>
+        </div>
+    </div>
+
     <script type="module" src="quiz_app.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js') // Ensure the path is correct
+                navigator.serviceWorker.register('./service-worker.js')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })
