@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>製菓衛生師試験 過去問学習サイト (最終版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div id="quiz-container">
+        <header>
+            <h1>製菓衛生師試験 対策クイズ</h1>
+            <p>関西広域連合 過去問ベース</p>
+            <div class="header-buttons-container">
+                <button id="theme-toggle-button" class="icon-button theme-toggle-icon" title="テーマ切り替え"></button>
+                <button id="mute-button" class="icon-button mute-icon" title="効果音 オン/オフ"></button>
+            </div>
+        </header>
+
+        <div class="quiz-content-scrollable">
+            <div id="selection-area" class="view-transition">
+                <div id="warning-message-area">
+                    <p><strong>【重要なお知らせ】</strong><br>
+                    このクイズの問題・解説にはAIによって生成された情報が含まれており、不正確な点や誤りが存在する可能性があります。<br>
+                    特に、<strong>令和3年度および令和2年度の問題はデータが不完全（途中まで）</strong>です。<br>
+                    学習の際は、必ず公式の過去問題集等と照らし合わせてご利用いただき、あくまで参考情報としてご活用ください。</p>
+                </div>
+
+                <div>
+                    <label for="year-buttons-container">年度を選択:</label>
+                    <div id="year-buttons-container" class="year-button-container">
+                    </div>
+                </div>
+                <div>
+                    <label for="category-buttons-container">分野を選択:</label>
+                    <div id="category-buttons-container" class="category-button-container">
+                    </div>
+                </div>
+                
+                <div class="selection-actions">
+                    <button id="start-quiz-button" class="apple-button apple-button-primary text-lg" disabled>
+                        クイズ開始
+                    </button>
+                    <button id="resume-quiz-button" class="apple-button apple-button-secondary text-lg" style="display: none;">
+                        前回の続きから再開
+                    </button>
+                </div>
+                 <button id="view-history-button" class="apple-button apple-button-control w-full mt-3 text-sm">
+                    過去の成績を見る
+                </button>
+                
+                <div id="featured-questions-area" class="mt-6 pt-4 border-t" style="display: none;">
+                    <h3 class="text-md font-semibold mb-2 text-center">注目問題ピックアップ</h3>
+                    <div id="featured-questions-container" class="space-y-2">
+                    </div>
+                </div>
+                <p id="credit-text">このサイトはGeminiによって作られました</p>
+            </div>
+
+            <div id="quiz-content-area" style="display: none;" class="view-transition">
+                <div class="flex justify-between items-center mb-3">
+                    <button id="home-button-quiz" class="apple-button apple-button-control text-sm">ホームへ</button>
+                    <p id="question-info"></p>
+                </div>
+                <div id="question-details-wrapper" class="question-content-item">
+                    <div id="question-area">
+                        <h2 id="question-text"></h2>
+                        <div id="options-container"></div>
+                    </div>
+                </div>
+                <div id="feedback-area">
+                    <p id="feedback-text"></p>
+                    <p id="explanation-text"></p>
+                </div>
+                <div id="navigation-area">
+                    <button id="prev-question-button" class="apple-button apple-button-control" disabled>前の問題へ</button>
+                    <p id="score-text">スコア: 0/0</p>
+                    <button id="next-question-button" class="apple-button apple-button-primary" style="display: none;">
+                        次の問題へ
+                    </button>
+                </div>
+            </div>
+
+            <div id="results-area" style="display: none;" class="view-transition">
+                <div class="confetti-container"></div>
+                <h2>クイズ終了！</h2>
+                <p id="final-score-text"></p>
+                <p id="final-score-percentage"></p>
+                <div class="flex">
+                    <button id="restart-quiz-button" class="apple-button apple-button-primary">
+                        同じ条件で再挑戦
+                    </button>
+                    <button id="home-button-results" class="apple-button apple-button-secondary">
+                        ホームへ戻る
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="score-history-modal" style="display: none;">
+        <div class="modal-content">
+            <h3>過去の成績</h3>
+            <div id="overall-stats" class="mb-4 text-sm">
+                <p>総解答問題数: <span id="total-attempted-stat">0</span></p>
+                <p>総正解数: <span id="total-correct-stat">0</span></p>
+                <p>平均正答率: <span id="average-accuracy-stat">0</span>%</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr>
+                            <th>日時</th>
+                            <th>年度</th>
+                            <th>分野</th>
+                            <th>スコア</th>
+                            <th>正答率</th>
+                        </tr>
+                    </thead>
+                    <tbody id="score-history-table-body"></tbody>
+                </table>
+            </div>
+            <button id="clear-history-button" class="apple-button apple-button-secondary text-sm mt-4 mr-2">履歴を消去</button>
+            <button id="close-modal-button" class="apple-button apple-button-control text-sm mt-4 modal-close-button">閉じる</button>
+        </div>
+    </div>
+
+    <div id="interim-results-modal" style="display: none;">
+        <div class="interim-modal-content">
+            <h3>中間結果</h3>
+            <p id="interim-title-text" class="font-semibold mb-2"></p>
+            <p id="interim-score-text"></p>
+            <div class="interim-actions">
+                <button id="continue-to-next-set-button" class="apple-button apple-button-primary">次の問題セットへ</button>
+                <button id="interrupt-quiz-button" class="apple-button apple-button-secondary">中断してホームへ</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="quiz_app.js"></script>
+</body>
+</html>
